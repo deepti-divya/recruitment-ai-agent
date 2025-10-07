@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="fas fa-user-tie me-2"></i>Recruitment AI Agent</h1>
+        <p class="lead">Upload job descriptions and resumes to automatically evaluate candidate matches.</p>
+    </div>
+</div>
+
+<!-- Job Description Input Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Job Description Input</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="jdTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">Upload File</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab">Manual Input</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="generate-tab" data-bs-toggle="tab" data-bs-target="#generate" type="button" role="tab">Generate JD</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content p-3" id="jdTabsContent">
+                    <!-- Upload File Tab -->
+                    <div class="tab-pane fade show active" id="upload" role="tabpanel">
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="jdFile" class="form-label">Upload Job Description (PDF/DOC/DOCX)</label>
+                                <input class="form-control" type="file" id="jdFile" name="jd_file" accept=".pdf,.doc,.docx">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="processJD('upload')">
+                                <i class="fas fa-upload me-2"></i>Process JD
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Manual Input Tab -->
+                    <div class="tab-pane fade" id="manual" role="tabpanel">
+                        <form id="manualForm">
+                            <div class="mb-3">
+                                <label for="jdText" class="form-label">Paste Job Description</label>
+                                <textarea class="form-control" id="jdText" name="jd_text" rows="6" placeholder="Paste the job description here..."></textarea>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="processJD('manual')">
+                                <i class="fas fa-check me-2"></i>Use This JD
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Generate JD Tab -->
+                    <div class="tab-pane fade" id="generate" role="tabpanel">
+                        <form id="generateForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="jobTitle" class="form-label">Job Title *</label>
+                                        <input type="text" class="form-control" id="jobTitle" name="job_title" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="yearsExperience" class="form-label">Years of Experience *</label>
+                                        <input type="text" class="form-control" id="yearsExperience" name="years_experience" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="mustHaveSkills" class="form-label">Must-have Skills (comma-separated) *</label>
+                                        <textarea class="form-control" id="mustHaveSkills" name="must_have_skills" rows="3" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="companyName" class="form-label">Company Name *</label>
+                                        <input type="text" class="form-control" id="companyName" name="company_name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="employmentType" class="form-label">Employment Type *</label>
+                                        <select class="form-select" id="employmentType" name="employment_type" required>
+                                            <option value="">Select...</option>
+                                            <option value="Full-time">Full-time</option>
+                                            <option value="Part-time">Part-time</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Internship">Internship</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="industry" class="form-label">Industry *</label>
+                                        <input type="text" class="form-control" id="industry" name="industry" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="location" class="form-label">Location *</label>
+                                        <input type="text" class="form-control" id="location" name="location" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="generateJD()">
+                                <i class="fas fa-magic me-2"></i>Generate Job Description
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resume Upload Section -->
+<div class="row" id="resumeSection" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-file-upload me-2"></i>Upload Resumes</h5>
+            </div>
+            <div class="card-body">
+                <form id="evaluationForm" action="/evaluate_candidates" method="post" enctype="multipart/form-data">
+                    <input type="hidden" id="finalJD" name="job_description">
+                    <div class="mb-3">
+                        <label for="resumeFiles" class="form-label">Upload Resumes (PDF/DOC/DOCX) - Max 10 files</label>
+                        <input class="form-control" type="file" id="resumeFiles" name="resume_files" multiple accept=".pdf,.doc,.docx" required>
+                        <div class="form-text">Hold Ctrl/Cmd to select multiple files</div>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-play me-2"></i>Evaluate Candidates
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current JD Preview -->
+<div class="row" id="jdPreview" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Current Job Description</h5>
+            </div>
+            <div class="card-body">
+                <div id="jdPreviewContent" style="max-height: 200px; overflow-y: auto;"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearJD()">
+                    <i class="fas fa-times me-1"></i>Clear JD
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentJD = '';
+
+    async function processJD(method) {
+        let jdContent = '';
+        
+        if (method === 'upload') {
+            const fileInput = document.getElementById('jdFile');
+            if (!fileInput.files[0]) {
+                alert('Please select a file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('jd_file', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/upload_jd', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                jdContent = data.job_description;
+            } catch (error) {
+                alert('Error processing file: ' + error);
+                return;
+            }
+        } else if (method === 'manual') {
+            jdContent = document.getElementById('jdText').value;
+            if (!jdContent.trim()) {
+                alert('Please enter job description');
+                return;
+            }
+        }
+        
+        setCurrentJD(jdContent);
+    }
+
+    async function generateJD() {
+        const form = document.getElementById('generateForm');
+        const formData = new FormData(form);
+        
+        // Validate required fields
+        const required = ['job_title', 'years_experience', 'must_have_skills', 'company_name', 'employment_type', 'industry', 'location'];
+        for (let field of required) {
+            if (!formData.get(field)) {
+                alert('Please fill all required fields');
+                return;
+            }
+        }
+        
+        try {
+            const response = await fetch('/generate_jd', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            setCurrentJD(data.job_description);
+        } catch (error) {
+            alert('Error generating JD: ' + error);
+        }
+    }
+
+    function setCurrentJD(jd) {
+        currentJD = jd;
+        document.getElementById('finalJD').value = jd;
+        document.getElementById('jdPreviewContent').textContent = jd.length > 500 ? jd.substring(0, 500) + '...' : jd;
+        document.getElementById('resumeSection').style.display = 'block';
+        document.getElementById('jdPreview').style.display = 'block';
+        
+        // Scroll to resume section
+        document.getElementById('resumeSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function clearJD() {
+        currentJD = '';
+        document.getElementById('finalJD').value = '';
+        document.getElementById('jdPreviewContent').textContent = '';
+        document.getElementById('resumeSection').style.display = 'none';
+        document.getElementById('jdPreview').style.display = 'none';
+        
+        // Clear forms
+        document.getElementById('uploadForm').reset();
+        document.getElementById('manualForm').reset();
+        document.getElementById('generateForm').reset();
+    }
+</script>
+{% endblock %}
